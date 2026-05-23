@@ -7,19 +7,14 @@
     border-radius: 1rem;
     cursor: pointer;
 
-
     transition: all 0.3s ease-in-out;
 
     &.primary-button{
-        background-color: #4a90e2;
-        color: whitesmoke;
-
-        &:hover{
-            background-color: #357ABD;
-        }
+        background-color: #e1034d;
+        color: white;
     }
 
     &:active{
-        transform: scale(0.98);
+        transform: scale(0.9);
     }
 }

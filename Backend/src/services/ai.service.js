@@ -7,6 +7,32 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
 })
 
+function createAiConfigError(message) {
+    const error = new Error(message)
+    error.statusCode = 401
+    error.isAiConfigError = true
+    return error
+}
+
+function assertGoogleApiKey() {
+    if (!process.env.GOOGLE_GENAI_API_KEY) {
+        throw createAiConfigError("GOOGLE_GENAI_API_KEY is missing in Backend/.env")
+    }
+}
+
+function normalizeAiError(error) {
+    const message = error?.message || ""
+
+    if (
+        error?.status === 400 &&
+        message.includes("API key not valid")
+    ) {
+        throw createAiConfigError("Google Gemini API key is invalid. Update GOOGLE_GENAI_API_KEY in Backend/.env and restart the backend server.")
+    }
+
+    throw error
+}
+
 
 const interviewReportSchema = z.object({
     matchScore: z.number().describe("A score between 0 and 100 indicating how well the candidate's profile matches the job describe"),
@@ -33,6 +59,7 @@ const interviewReportSchema = z.object({
 })
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
+assertGoogleApiKey()
 
 const prompt = `
 Generate a complete interview report in valid JSON format.
@@ -56,14 +83,20 @@ Job Description:
 ${jobDescription}
 `
 
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema),
-        }
-    })
+    let response
+
+    try {
+        response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: zodToJsonSchema(interviewReportSchema),
+            }
+        })
+    } catch (error) {
+        normalizeAiError(error)
+    }
 
 console.log(response.text)
 
@@ -94,6 +127,7 @@ async function generatePdfFromHtml(htmlContent) {
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
+    assertGoogleApiKey()
 
     const resumePdfSchema = z.object({
         html: z.string().describe("The HTML content of the resume which can be converted to PDF using any library like puppeteer")
@@ -112,14 +146,20 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `
 
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema),
-        }
-    })
+    let response
+
+    try {
+        response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: zodToJsonSchema(resumePdfSchema),
+            }
+        })
+    } catch (error) {
+        normalizeAiError(error)
+    }
 
 
     const jsonContent = JSON.parse(response.text)

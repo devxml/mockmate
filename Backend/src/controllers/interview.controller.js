@@ -37,6 +37,18 @@ async function generateInterViewReportController(
             jobDescription
         } = req.body
 
+        if (!jobDescription || !jobDescription.trim()) {
+            return res.status(400).json({
+                message: "Job description is required"
+            })
+        }
+
+        if (!resumeContent.text || !resumeContent.text.trim()) {
+            return res.status(400).json({
+                message: "Could not read text from this PDF. Please upload a text-based resume PDF."
+            })
+        }
+
         // generate report using AI
 const interViewReportByAi =
     await generateInterviewReport({
@@ -227,7 +239,7 @@ console.log(interViewReportByAi)
 
         console.log(error)
 
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             message:
                 "Failed to generate interview report",
             error: error.message
@@ -376,7 +388,7 @@ async function generateResumePdfController(
 
         console.log(error)
 
-        res.status(500).json({
+        res.status(error.statusCode || 500).json({
             message:
                 "Failed to generate resume PDF",
             error: error.message

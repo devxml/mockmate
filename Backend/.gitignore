@@ -1,2 +1,37 @@
-/.env
-/node_modules
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Uploads & generated files
+uploads/
+temp/
+tmp/
+*.pdf
+
+# Puppeteer browser cache
+.puppeteer/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# Test & coverage
+coverage/
+.nyc_output/
+
+# Caches
+.eslintcache

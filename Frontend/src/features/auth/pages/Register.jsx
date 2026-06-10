@@ -1,60 +1,68 @@
-import React,{useState} from 'react'
-import { useNavigate, Link } from 'react-router'
-import { useAuth } from '../hooks/useAuth'
+import { useState } from "react"
+import { useNavigate } from "react-router"
+import { useAuth } from "../hooks/useAuth"
+import { AuthLayout, AuthFooterLink } from "../../../components/layout/AuthLayout"
+import { Input } from "../../../components/ui/Input"
+import { Button } from "../../../components/ui/Button"
+import { LoadingScreen } from "../../../components/ui/LoadingScreen"
 
 const Register = () => {
+  const navigate = useNavigate()
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { loading, handleRegister } = useAuth()
 
-    const navigate = useNavigate()
-    const [ username, setUsername ] = useState("")
-    const [ email, setEmail ] = useState("")
-    const [ password, setPassword ] = useState("")
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    await handleRegister({ username, email, password })
+    navigate("/")
+  }
 
-    const {loading,handleRegister} = useAuth()
-    
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        await handleRegister({username,email,password})
-        navigate("/")
-    }
+  if (loading) {
+    return <LoadingScreen message="Creating your account..." />
+  }
 
-    if(loading){
-        return (<main><h1>Loading.......</h1></main>)
-    }
-
-    return (
-        <main>
-            <div className="form-container">
-                <h1>Register</h1>
-
-                <form onSubmit={handleSubmit}>
-
-                    <div className="input-group">
-                        <label htmlFor="username">Username</label>
-                        <input
-                            onChange={(e) => { setUsername(e.target.value) }}
-                            type="text" id="username" name='username' placeholder='Enter username' />
-                    </div>
-                    <div className="input-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            onChange={(e) => { setEmail(e.target.value) }}
-                            type="email" id="email" name='email' placeholder='Enter email address' />
-                    </div>
-                    <div className="input-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            onChange={(e) => { setPassword(e.target.value) }}
-                            type="password" id="password" name='password' placeholder='Enter password' />
-                    </div>
-
-                    <button className='button primary-button' >Register</button>
-
-                </form>
-
-                <p>Already have an account? <Link to={"/login"} >Login</Link> </p>
-            </div>
-        </main>
-    )
+  return (
+    <AuthLayout title="Create account" subtitle="Start preparing for your dream role">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Username"
+          id="username"
+          type="text"
+          name="username"
+          placeholder="johndoe"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <Input
+          label="Email"
+          id="email"
+          type="email"
+          name="email"
+          placeholder="you@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Input
+          label="Password"
+          id="password"
+          type="password"
+          name="password"
+          placeholder="Create a strong password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Button type="submit" className="w-full" size="lg">
+          Create account
+        </Button>
+      </form>
+      <AuthFooterLink text="Already have an account?" linkText="Sign in" to="/login" />
+    </AuthLayout>
+  )
 }
 
 export default Register

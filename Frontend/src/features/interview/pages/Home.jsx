@@ -1,162 +1,240 @@
-import React, { useState, useRef } from 'react'
-import "../style/home.scss"
-import { useInterview } from '../hooks/useInterview.js'
-import { useNavigate } from 'react-router'
+import { useState, useRef } from "react"
+import { useNavigate } from "react-router"
+import { motion } from "framer-motion"
+import { Briefcase, User, Upload, Sparkles, Clock, FileText } from "lucide-react"
+import { useInterview } from "../hooks/useInterview.js"
+import { AppShell } from "../../../components/layout/AppShell"
+import { Card, CardBody, CardFooter } from "../../../components/ui/Card"
+import { Badge } from "../../../components/ui/Badge"
+import { Textarea } from "../../../components/ui/Textarea"
+import { Button } from "../../../components/ui/Button"
+import { LoadingScreen } from "../../../components/ui/LoadingScreen"
+import { ReportCard } from "../components/ReportCard"
+import { cn } from "../../../lib/cn"
 
 const Home = () => {
+  const { loading, generateReport, reports } = useInterview()
+  const [jobDescription, setJobDescription] = useState("")
+  const [selfDescription, setSelfDescription] = useState("")
+  const [resumeFileName, setResumeFileName] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [isDragging, setIsDragging] = useState(false)
+  const resumeInputRef = useRef()
+  const navigate = useNavigate()
 
-    const { loading, generateReport,reports } = useInterview()
-    const [ jobDescription, setJobDescription ] = useState("")
-    const [ selfDescription, setSelfDescription ] = useState("")
-    const [ resumeFileName, setResumeFileName ] = useState("")
-    const resumeInputRef = useRef()
+  const handleGenerateReport = async () => {
+    setErrorMessage("")
+    const resumeFile = resumeInputRef.current?.files?.[0]
 
-    const navigate = useNavigate()
-
-    const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current.files[ 0 ]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
+    if (!jobDescription.trim()) {
+      setErrorMessage("Please paste the job description before generating the report.")
+      return
     }
 
-    if (loading) {
-        return (
-            <main className='loading-screen'>
-                <h1>Loading your interview plan...</h1>
-            </main>
-        )
+    if (!resumeFile) {
+      setErrorMessage("Please upload your resume as a PDF file.")
+      return
     }
 
-    return (
-        <div className='home-page'>
+    if (resumeFile.type !== "application/pdf") {
+      setErrorMessage("Only PDF resumes are supported right now.")
+      return
+    }
 
-            {/* Page Header */}
-            <header className='page-header'>
-                <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
-                <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
-            </header>
+    try {
+      const data = await generateReport({ jobDescription, selfDescription, resumeFile })
 
-            {/* Main Card */}
-            <div className='interview-card'>
-                <div className='interview-card__body'>
+      if (!data?._id) {
+        setErrorMessage("The report was generated but no report ID was returned.")
+        return
+      }
 
-                    {/* Left Panel - Job Description */}
-                    <div className='panel panel--left'>
-                        <div className='panel__header'>
-                            <span className='panel__icon'>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
-                            </span>
-                            <h2>Target Job Description</h2>
-                            <span className='badge badge--required'>Required</span>
-                        </div>
-                        <textarea
-                            onChange={(e) => { setJobDescription(e.target.value) }}
-                            className='panel__textarea'
-                            placeholder={`Paste the full job description here...\ne.g. 'Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design...'`}
-                            maxLength={5000}
-                        />
-                        <div className='char-counter'>0 / 5000 chars</div>
-                    </div>
+      navigate(`/interview/${data._id}`)
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to generate the report. Please try again."
+      setErrorMessage(message)
+    }
+  }
 
-                    {/* Vertical Divider */}
-                    <div className='panel-divider' />
+  const handleFile = (file) => {
+    if (file) {
+      setResumeFileName(file.name)
+      const dt = new DataTransfer()
+      dt.items.add(file)
+      resumeInputRef.current.files = dt.files
+    }
+  }
 
-                    {/* Right Panel - Profile */}
-                    <div className='panel panel--right'>
-                        <div className='panel__header'>
-                            <span className='panel__icon'>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                            </span>
-                            <h2>Your Profile</h2>
-                        </div>
+  if (loading && !reports.length) {
+    return <LoadingScreen message="Loading your interview plans..." />
+  }
 
-                        {/* Upload Resume */}
-                        <div className='upload-section'>
-                            <label className='section-label'>
-                                Upload Resume
-                                <span className='badge badge--best'>Best Results</span>
-                            </label>
-                            <label className='dropzone' htmlFor='resume'>
-                                <span className='dropzone__icon'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-                                </span>
-                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
-                               <p className='dropzone__subtitle'>
-  {resumeFileName ? `✅ ${resumeFileName}` : "PDF or DOCX (Max 5MB)"}
-</p>
-                                <input 
-  ref={resumeInputRef} 
-  hidden 
-  type='file' 
-  id='resume' 
-  name='resume' 
-  accept='.pdf,.docx'
-  onChange={(e) => setResumeFileName(e.target.files[0]?.name || "")}
-/>
-                            </label>
-                        </div>
+  return (
+    <AppShell>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 lg:py-10 space-y-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-2"
+        >
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100">
+            Create interview plan
+          </h1>
+          <p className="text-sm text-zinc-400 max-w-xl">
+            Paste a job description and upload your resume. Our AI builds a personalized strategy in ~30 seconds.
+          </p>
+        </motion.div>
 
-                        {/* OR Divider */}
-                        <div className='or-divider'><span>OR</span></div>
+        {/* Main form card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="overflow-hidden">
+            <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
+              {/* Job description */}
+              <CardBody className="flex flex-col min-h-[380px]">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="size-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                    <Briefcase className="size-4 text-violet-400" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-zinc-200">Target Job Description</h2>
+                  <Badge variant="required">Required</Badge>
+                </div>
+                <Textarea
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the full job description here…"
+                  maxLength={5000}
+                  className="min-h-[280px]"
+                />
+              </CardBody>
 
-                        {/* Quick Self-Description */}
-                        <div className='self-description'>
-                            <label className='section-label' htmlFor='selfDescription'>Quick Self-Description</label>
-                            <textarea
-                                onChange={(e) => { setSelfDescription(e.target.value) }}
-                                id='selfDescription'
-                                name='selfDescription'
-                                className='panel__textarea panel__textarea--short'
-                                placeholder="Briefly describe your experience, key skills, and years of experience if you don't have a resume handy..."
-                            />
-                        </div>
-
-                        {/* Info Box */}
-                        <div className='info-box'>
-                            <span className='info-box__icon'>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" stroke="#1a1f27" strokeWidth="2" /><line x1="12" y1="16" x2="12.01" y2="16" stroke="#1a1f27" strokeWidth="2" /></svg>
-                            </span>
-                            <p>Either a <strong>Resume</strong> or a <strong>Self Description</strong> is required to generate a personalized plan.</p>
-                        </div>
-                    </div>
+              {/* Profile */}
+              <CardBody className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                    <User className="size-4 text-indigo-400" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-zinc-200">Your Profile</h2>
                 </div>
 
-                {/* Card Footer */}
-                <div className='interview-card__footer'>
-                    <span className='footer-info'>AI-Powered Strategy Generation &bull; Approx 30s</span>
-                    <button
-                        onClick={handleGenerateReport}
-                        className='generate-btn'>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" /></svg>
-                        Generate My Interview Strategy
-                    </button>
+                {/* Resume upload */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-zinc-300">Upload Resume</span>
+                    <Badge variant="accent">Best Results</Badge>
+                  </div>
+                  <label
+                    htmlFor="resume"
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setIsDragging(false)
+                      handleFile(e.dataTransfer.files[0])
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-2 p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all",
+                      isDragging
+                        ? "border-violet-500 bg-violet-500/5"
+                        : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/80"
+                    )}
+                  >
+                    <Upload className="size-6 text-zinc-500" />
+                    <p className="text-sm font-medium text-zinc-300">
+                      {resumeFileName || "Click or drag & drop"}
+                    </p>
+                    <p className="text-xs text-zinc-600">PDF only · Max 5MB</p>
+                    <input
+                      ref={resumeInputRef}
+                      hidden
+                      type="file"
+                      id="resume"
+                      name="resume"
+                      accept="application/pdf,.pdf"
+                      onChange={(e) => setResumeFileName(e.target.files[0]?.name || "")}
+                    />
+                  </label>
                 </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-zinc-800" />
+                  <span className="text-xs text-zinc-600 font-medium">OR</span>
+                  <div className="flex-1 h-px bg-zinc-800" />
+                </div>
+
+                <Textarea
+                  label="Quick Self-Description"
+                  id="selfDescription"
+                  value={selfDescription}
+                  onChange={(e) => setSelfDescription(e.target.value)}
+                  placeholder="Briefly describe your experience and key skills…"
+                  className="min-h-[80px]"
+                />
+
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-500/5 border border-blue-500/15">
+                  <FileText className="size-4 text-blue-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-blue-300/80 leading-relaxed">
+                    Either a <strong className="text-blue-200">Resume</strong> or a{" "}
+                    <strong className="text-blue-200">Self Description</strong> is required.
+                  </p>
+                </div>
+              </CardBody>
             </div>
 
-            {/* Recent Reports List */}
-            {reports.length > 0 && (
-                <section className='recent-reports'>
-                    <h2>My Recent Interview Plans</h2>
-                    <ul className='reports-list'>
-                        {reports.map(report => (
-                            <li key={report._id} className='report-item' onClick={() => navigate(`/interview/${report._id}`)}>
-                                <h3>{report.title || 'Untitled Position'}</h3>
-                                <p className='report-meta'>Generated on {new Date(report.createdAt).toLocaleDateString()}</p>
-                                <p className={`match-score ${report.matchScore >= 80 ? 'score--high' : report.matchScore >= 60 ? 'score--mid' : 'score--low'}`}>Match Score: {report.matchScore}%</p>
-                            </li>
-                        ))}
-                    </ul>
-                </section>
-            )}
+            <CardFooter>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <Clock className="size-3.5" />
+                AI-powered · ~30 seconds
+              </div>
+              <Button onClick={handleGenerateReport} disabled={loading} icon={Sparkles} size="lg">
+                {loading ? "Generating…" : "Generate Strategy"}
+              </Button>
+            </CardFooter>
+          </Card>
 
-            {/* Page Footer */}
-            <footer className='page-footer'>
-                <a href='#'>Privacy Policy</a>
-                <a href='#'>Terms of Service</a>
-                <a href='#'>Help Center</a>
-            </footer>
-        </div>
-    )
+          {errorMessage && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 px-4 py-3 rounded-lg text-sm text-red-400 bg-red-500/10 border border-red-500/20"
+              role="alert"
+            >
+              {errorMessage}
+            </motion.p>
+          )}
+        </motion.div>
+
+        {/* Recent reports */}
+        {reports.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <h2 className="text-lg font-semibold text-zinc-200">Recent Plans</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {reports.map((report, i) => (
+                <ReportCard
+                  key={report._id}
+                  report={report}
+                  index={i}
+                  onClick={() => navigate(`/interview/${report._id}`)}
+                />
+              ))}
+            </div>
+          </motion.section>
+        )}
+      </div>
+    </AppShell>
+  )
 }
 
 export default Home

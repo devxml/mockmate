@@ -20,14 +20,6 @@
 
 ## Screenshots
 
-
-| Screenshot | File name (suggested) |
-|------------|------------------------|
-| Login / Register | `auth.png` |
-| Dashboard | `dashboard.png` |
-| Technical questions | `technical-questions.png` |
-| Roadmap | `roadmap.png` |
-
 ### Auth
 
 ![MockMate login and register screens](./docs/screenshots/auth.png)
